@@ -1,0 +1,43 @@
+name: Deploy Frontend to S3
+
+# mainブランチにpushされた時だけ自動で動かす
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 最新のコードを取得する
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Node.jsの環境を準備する
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. パッケージをインストールする
+      - name: Install Dependencies
+        run: npm install
+
+      # 4. Reactをビルドする
+      - name: Build
+        run: npm run build
+
+      # 5. AWSの合鍵をセットする
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 6. S3へデプロイ（アップロード）する
+      - name: Deploy to S3
+        # Viteの場合は dist/ を、Create React Appの場合は build/ を指定してください
+        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete

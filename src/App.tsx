@@ -18,14 +18,14 @@ export default function App() {
   const [budgetInput, setBudgetInput] = useState<number | ''>('');
 
   const fetchExpensesByMonth = (monthStr: string) => {
-    fetch(`http://35.74.235.240:8080/api/expenses/month/${monthStr}`)
+    fetch(`http://54.249.0.212:8080/api/expenses/month/${monthStr}`)
       .then(res => res.json())
       .then(data => setExpenses(data))
       .catch(err => console.error('通信エラー:', err));
   };
 
   const fetchBudget = (monthStr: string) => {
-    fetch(`http://35.74.235.240:8080/api/budgets/${monthStr}`)
+    fetch(`http://54.249.0.212:8080/api/budgets/${monthStr}`)
       .then(res => {
         if (res.ok) return res.json();
         throw new Error('Budget not found');
@@ -61,7 +61,7 @@ export default function App() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const expenseData = { title, amount: Number(amount), category, expenseDate, memo };
-    const url = editId ? `http://35.74.235.240:8080/api/expenses/${editId}` : 'http://35.74.235.240:8080/api/expenses';
+    const url = editId ? `http://54.249.0.212:8080/api/expenses/${editId}` : 'http://54.249.0.212:8080/api/expenses';
     const method = editId ? 'PUT' : 'POST';
 
     fetch(url, {
@@ -82,7 +82,7 @@ export default function App() {
     e.preventDefault();
     const budgetData = { yearMonth: currentMonth, budgetAmount: Number(budgetInput) };
 
-    fetch('http://35.74.235.240:8080/api/budgets', {
+    fetch('http://54.249.0.212:8080/api/budgets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(budgetData),
@@ -97,7 +97,7 @@ export default function App() {
 
   const handleDelete = (id: number) => {
     if (window.confirm('本当にこのデータを削除しますか？')) {
-      fetch(`http://35.74.235.240:8080/api/expenses/${id}`, { method: 'DELETE' })
+      fetch(`http://54.249.0.212:8080/api/expenses/${id}`, { method: 'DELETE' })
         .then(res => {
           if (res.ok) {
             fetchExpensesByMonth(currentMonth);
