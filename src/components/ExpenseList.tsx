@@ -1,5 +1,5 @@
 import { List, ListItem, ListItemText, Typography, Divider } from '@mui/material';
-import type { Expense, Category } from '../App';
+import type { Expense, Category } from '../types';
 
 type Props = {
   expenses: Expense[];

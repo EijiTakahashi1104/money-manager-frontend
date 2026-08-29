@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Paper, Typography, Box, TextField, Button, List, ListItem, ListItemText } from '@mui/material';
-import type { Category } from '../App';
+import { Paper, Typography, TextField, Button, List, ListItem, ListItemText } from '@mui/material';
+import type { Category, Budget } from '../types';
 import { API_BASE_URL } from '../config';
-
-// 予算データの型
-export type Budget = {
-  id?: number;
-  categoryId: number;
-  yearMonth: string;
-  budgetAmount: number;
-};
 
 type Props = {
   categories: Category[];
@@ -17,7 +9,6 @@ type Props = {
 };
 
 export default function BudgetSection({ categories, monthStr }: Props) {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
   // カテゴリIDごとの入力金額を管理する状態 (例: { 1: 20000, 2: 25000 })
   const [amounts, setAmounts] = useState<{ [key: number]: number }>({});
 
@@ -33,7 +24,6 @@ export default function BudgetSection({ categories, monthStr }: Props) {
       })
       .then(data => {
         if (Array.isArray(data)) {
-          setBudgets(data);
           const map: { [key: number]: number } = {};
           data.forEach((b: Budget) => {
             map[b.categoryId] = b.budgetAmount;
