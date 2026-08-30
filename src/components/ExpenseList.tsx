@@ -1,23 +1,17 @@
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  Box
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Typography, Box, IconButton, Tooltip
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { Expense, Category } from '../types';
 
 type Props = {
   expenses: Expense[];
   categories: Category[];
+  onDelete: (id: number) => void; // ★ 削除処理を受け取るプロパティを追加
 };
 
-export default function ExpenseList({ expenses, categories }: Props) {
-  // 支出が0件の場合の表示
+export default function ExpenseList({ expenses, categories, onDelete }: Props) {
   if (expenses.length === 0) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -26,30 +20,26 @@ export default function ExpenseList({ expenses, categories }: Props) {
     );
   }
 
-  // 日付の新しい順（降順）に並び替える
   const sortedExpenses = [...expenses].sort((a, b) => 
     new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
   );
 
   return (
-    // 枠線をうっすら付けるために variant="outlined" を設定
     <TableContainer component={Paper} elevation={0} variant="outlined">
       <Table sx={{ minWidth: 600 }} aria-label="支出一覧テーブル">
-        {/* 表のヘッダー部分 */}
         <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
           <TableRow>
             <TableCell width="15%"><strong>日付</strong></TableCell>
             <TableCell width="20%"><strong>カテゴリ</strong></TableCell>
             <TableCell width="30%"><strong>内容</strong></TableCell>
             <TableCell width="15%" align="right"><strong>金額</strong></TableCell>
-            <TableCell width="20%"><strong>メモ</strong></TableCell>
+            <TableCell width="15%"><strong>メモ</strong></TableCell>
+            <TableCell width="5%" align="center"><strong>操作</strong></TableCell> {/* ★ 追加 */}
           </TableRow>
         </TableHead>
         
-        {/* 表のデータ部分 */}
         <TableBody>
           {sortedExpenses.map((expense) => {
-            // カテゴリIDからカテゴリ名を検索
             const category = categories.find(c => c.id === expense.categoryId);
             
             return (
@@ -62,6 +52,18 @@ export default function ExpenseList({ expenses, categories }: Props) {
                 <TableCell>{expense.title}</TableCell>
                 <TableCell align="right">¥{expense.amount.toLocaleString()}</TableCell>
                 <TableCell>{expense.memo || '-'}</TableCell>
+                <TableCell align="center">
+                  {/* ★ 削除ボタンを追加 */}
+                  <Tooltip title="削除">
+                    <IconButton 
+                      color="error" 
+                      onClick={() => expense.id && onDelete(expense.id)}
+                      size="small"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             );
           })}
