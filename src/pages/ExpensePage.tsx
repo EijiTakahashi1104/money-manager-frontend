@@ -133,7 +133,7 @@ export default function ExpensePage({ monthStr }: Props) {
                 type="date"
                 value={editingExpense.expenseDate}
                 onChange={(e) => setEditingExpense({ ...editingExpense, expenseDate: e.target.value })}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
               <FormControl>
                 <InputLabel>カテゴリ</InputLabel>
