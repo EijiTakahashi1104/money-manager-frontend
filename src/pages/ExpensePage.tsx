@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Dialog, DialogTitle, DialogContent,
-  DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem
+  DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem, InputAdornment
 } from '@mui/material';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'; // ★追加
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DownloadIcon from '@mui/icons-material/Download';
+import SearchIcon from '@mui/icons-material/Search';
 import ExpenseForm from '../components/ExpenseForm';
 import ExpenseList from '../components/ExpenseList';
-import FixedExpenseDialog from '../components/FixedExpenseDialog'; // ★追加
+import FixedExpenseDialog from '../components/FixedExpenseDialog';
 import { API_BASE_URL } from '../config';
 import type { Expense, Category } from '../types';
 
@@ -16,19 +18,25 @@ export default function ExpensePage({ monthStr }: Props) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   
-  // 編集用・固定費用のダイアログ状態
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-  
-  const [fixedExpenseDialogOpen, setFixedExpenseDialogOpen] = useState(false); // ★追加
+  const [fixedExpenseDialogOpen, setFixedExpenseDialogOpen] = useState(false);
 
+  // 絞り込み用の状態
+  const [filterKeyword, setFilterKeyword] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState<number | ''>('');
+
+  // ★ 修正：バックエンドの検索APIを呼び出すように変更！
   const fetchExpenses = () => {
-    fetch(`${API_BASE_URL}/api/expenses/month/${monthStr}`)
+    const url = new URL(`${API_BASE_URL}/api/expenses/search`);
+    url.searchParams.append('monthStr', monthStr);
+    if (filterCategoryId !== '') url.searchParams.append('categoryId', filterCategoryId.toString());
+    if (filterKeyword) url.searchParams.append('keyword', filterKeyword);
+
+    fetch(url.toString())
       .then(res => res.ok ? res.json() : [])
       .then(data => {
-        if (Array.isArray(data)) {
-          setExpenses(data);
-        }
+        if (Array.isArray(data)) setExpenses(data);
       })
       .catch(err => console.error('支出取得エラー:', err));
   };
@@ -40,18 +48,19 @@ export default function ExpensePage({ monthStr }: Props) {
       .catch(err => console.error('カテゴリ取得エラー:', err));
   }, []);
 
+  // 月、カテゴリ、キーワードが変わるたびにバックエンドへ検索リクエストを飛ばす
   useEffect(() => {
     fetchExpenses();
-  }, [monthStr]);
+  }, [monthStr, filterCategoryId, filterKeyword]);
 
   const handleDelete = (id: number) => {
     if (!window.confirm('この支出を削除してもよろしいですか？')) return;
     fetch(`${API_BASE_URL}/api/expenses/${id}`, { method: 'DELETE' })
-    .then(res => {
-      if (!res.ok) throw new Error('削除に失敗しました');
-      fetchExpenses();
-    })
-    .catch(err => console.error('削除エラー:', err));
+      .then(res => {
+        if (!res.ok) throw new Error('削除に失敗しました');
+        fetchExpenses();
+      })
+      .catch(err => console.error('削除エラー:', err));
   };
 
   const handleEditClick = (expense: Expense) => {
@@ -71,12 +80,23 @@ export default function ExpensePage({ monthStr }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editingExpense)
     })
-    .then(res => {
-      if (!res.ok) throw new Error('更新に失敗しました');
-      handleCloseDialog();
-      fetchExpenses();
-    })
-    .catch(err => console.error('更新エラー:', err));
+      .then(res => {
+        if (!res.ok) throw new Error('更新に失敗しました');
+        handleCloseDialog();
+        fetchExpenses();
+      })
+      .catch(err => console.error('更新エラー:', err));
+  };
+
+  // ★ 修正：バックエンドのCSV生成APIを直接呼び出す（ダウンロードさせる）
+  const handleExportCSV = () => {
+    const url = new URL(`${API_BASE_URL}/api/expenses/export`);
+    url.searchParams.append('monthStr', monthStr);
+    if (filterCategoryId !== '') url.searchParams.append('categoryId', filterCategoryId.toString());
+    if (filterKeyword) url.searchParams.append('keyword', filterKeyword);
+    
+    // ブラウザにこのURLへアクセスさせることで直接ファイルダウンロードを開始
+    window.location.href = url.toString();
   };
 
   return (
@@ -85,25 +105,66 @@ export default function ExpensePage({ monthStr }: Props) {
         支出管理
       </Typography>
 
-      {/* 登録フォームと固定費ボタン */}
-      <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ mb: 4 }}>
         <ExpenseForm categories={categories} onExpenseAdded={fetchExpenses} />
         
-        {/* ★固定費自動入力ボタンを追加 */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
           <Button 
-            variant="outlined" 
-            color="primary" 
+            variant="outlined" color="primary" sx={{ bgcolor: 'white' }}
             onClick={() => setFixedExpenseDialogOpen(true)}
             startIcon={<AutoAwesomeIcon />}
-            sx={{ bgcolor: 'white' }}
           >
             固定費を自動入力
+          </Button>
+          <Button 
+            variant="outlined" color="success" sx={{ bgcolor: 'white' }}
+            onClick={handleExportCSV}
+            startIcon={<DownloadIcon />}
+            disabled={expenses.length === 0} // 表示データが無い時は無効化
+          >
+            CSVをダウンロード
           </Button>
         </Box>
       </Box>
 
-      {/* 支出一覧テーブル */}
+      {/* 絞り込みフィルター領域 */}
+      <Paper sx={{ p: 2, mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Typography variant="body2" sx={{ minWidth: 80, fontWeight: 'bold' }}>
+          絞り込み:
+        </Typography>
+        <FormControl size="small" sx={{ minWidth: 150 }}>
+          <InputLabel>カテゴリ</InputLabel>
+          <Select
+            value={filterCategoryId}
+            label="カテゴリ"
+            onChange={(e) => {
+              const raw = String(e.target.value);
+              setFilterCategoryId(raw === '' ? '' : Number(raw));
+            }}
+          >
+            <MenuItem value=""><em>すべて</em></MenuItem>
+            {categories.map((cat) => (
+              <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <TextField
+          label="キーワード検索"
+          size="small"
+          value={filterKeyword}
+          onChange={(e) => setFilterKeyword(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>
+              ),
+            },
+          }}
+          sx={{ flexGrow: 1 }}
+        />
+      </Paper>
+
+      {/* 支出一覧テーブル（そのまま expenses を渡すだけでOK） */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>{monthStr} の支出一覧</Typography>
         <ExpenseList 
@@ -114,33 +175,26 @@ export default function ExpensePage({ monthStr }: Props) {
         />
       </Paper>
 
-      {/* ★固定費自動入力ダイアログ */}
       <FixedExpenseDialog 
-        open={fixedExpenseDialogOpen} 
-        onClose={() => setFixedExpenseDialogOpen(false)}
-        categories={categories}
-        monthStr={monthStr}
-        onComplete={fetchExpenses}
+        open={fixedExpenseDialogOpen} onClose={() => setFixedExpenseDialogOpen(false)}
+        categories={categories} monthStr={monthStr} onComplete={fetchExpenses}
       />
 
-      {/* 編集用ダイアログ（修正いただいた slotProps 反映済み） */}
       <Dialog open={editDialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+        {/* 編集ダイアログの中身（変更なし） */}
         <DialogTitle>支出の編集</DialogTitle>
         <DialogContent dividers>
           {editingExpense && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
               <TextField
-                label="日付"
-                type="date"
-                value={editingExpense.expenseDate}
+                label="日付" type="date" value={editingExpense.expenseDate}
                 onChange={(e) => setEditingExpense({ ...editingExpense, expenseDate: e.target.value })}
                 slotProps={{ inputLabel: { shrink: true } }}
               />
               <FormControl>
                 <InputLabel>カテゴリ</InputLabel>
                 <Select
-                  value={editingExpense.categoryId}
-                  label="カテゴリ"
+                  value={editingExpense.categoryId} label="カテゴリ"
                   onChange={(e) => setEditingExpense({ ...editingExpense, categoryId: Number(e.target.value) })}
                 >
                   {categories.map((cat) => (
@@ -149,19 +203,15 @@ export default function ExpensePage({ monthStr }: Props) {
                 </Select>
               </FormControl>
               <TextField
-                label="内容"
-                value={editingExpense.title}
+                label="内容" value={editingExpense.title}
                 onChange={(e) => setEditingExpense({ ...editingExpense, title: e.target.value })}
               />
               <TextField
-                label="金額"
-                type="number"
-                value={editingExpense.amount}
+                label="金額" type="number" value={editingExpense.amount}
                 onChange={(e) => setEditingExpense({ ...editingExpense, amount: Number(e.target.value) })}
               />
               <TextField
-                label="メモ"
-                value={editingExpense.memo || ''}
+                label="メモ" value={editingExpense.memo || ''}
                 onChange={(e) => setEditingExpense({ ...editingExpense, memo: e.target.value })}
               />
             </Box>
