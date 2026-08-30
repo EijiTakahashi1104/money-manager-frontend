@@ -3,15 +3,17 @@ import {
   Paper, Typography, Box, IconButton, Tooltip
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit'; // ★ 編集アイコンを追加
 import type { Expense, Category } from '../types';
 
 type Props = {
   expenses: Expense[];
   categories: Category[];
-  onDelete: (id: number) => void; // ★ 削除処理を受け取るプロパティを追加
+  onDelete: (id: number) => void;
+  onEdit: (expense: Expense) => void; // ★ 編集処理を受け取るプロパティを追加
 };
 
-export default function ExpenseList({ expenses, categories, onDelete }: Props) {
+export default function ExpenseList({ expenses, categories, onDelete, onEdit }: Props) {
   if (expenses.length === 0) {
     return (
       <Box sx={{ p: 4, textAlign: 'center' }}>
@@ -33,8 +35,8 @@ export default function ExpenseList({ expenses, categories, onDelete }: Props) {
             <TableCell width="20%"><strong>カテゴリ</strong></TableCell>
             <TableCell width="30%"><strong>内容</strong></TableCell>
             <TableCell width="15%" align="right"><strong>金額</strong></TableCell>
-            <TableCell width="15%"><strong>メモ</strong></TableCell>
-            <TableCell width="5%" align="center"><strong>操作</strong></TableCell> {/* ★ 追加 */}
+            <TableCell width="10%"><strong>メモ</strong></TableCell>
+            <TableCell width="10%" align="center"><strong>操作</strong></TableCell>
           </TableRow>
         </TableHead>
         
@@ -53,7 +55,18 @@ export default function ExpenseList({ expenses, categories, onDelete }: Props) {
                 <TableCell align="right">¥{expense.amount.toLocaleString()}</TableCell>
                 <TableCell>{expense.memo || '-'}</TableCell>
                 <TableCell align="center">
-                  {/* ★ 削除ボタンを追加 */}
+                  {/* ★ 編集ボタンを追加 */}
+                  <Tooltip title="編集">
+                    <IconButton 
+                      color="primary" 
+                      onClick={() => onEdit(expense)}
+                      size="small"
+                      sx={{ mr: 1 }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  {/* 削除ボタン */}
                   <Tooltip title="削除">
                     <IconButton 
                       color="error" 
