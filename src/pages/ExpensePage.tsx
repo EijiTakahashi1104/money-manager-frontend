@@ -1,36 +1,27 @@
 import { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
+  Box, Typography, Paper, Dialog, DialogTitle, DialogContent,
+  DialogActions, Button, TextField, FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'; // ★追加
 import ExpenseForm from '../components/ExpenseForm';
 import ExpenseList from '../components/ExpenseList';
+import FixedExpenseDialog from '../components/FixedExpenseDialog'; // ★追加
 import { API_BASE_URL } from '../config';
 import type { Expense, Category } from '../types';
 
-// App.tsx から選択中の月を受け取る
 type Props = { monthStr: string };
 
 export default function ExpensePage({ monthStr }: Props) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   
-  // 編集ダイアログ用の状態
+  // 編集用・固定費用のダイアログ状態
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  
+  const [fixedExpenseDialogOpen, setFixedExpenseDialogOpen] = useState(false); // ★追加
 
-  // 支出一覧を取得する関数（月が切り替わった時や、追加・編集・削除の後に呼ぶ）
   const fetchExpenses = () => {
     fetch(`${API_BASE_URL}/api/expenses/month/${monthStr}`)
       .then(res => res.ok ? res.json() : [])
@@ -42,7 +33,6 @@ export default function ExpensePage({ monthStr }: Props) {
       .catch(err => console.error('支出取得エラー:', err));
   };
 
-  // 初回のみカテゴリ一覧を取得
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/categories`)
       .then(res => res.json())
@@ -50,42 +40,32 @@ export default function ExpensePage({ monthStr }: Props) {
       .catch(err => console.error('カテゴリ取得エラー:', err));
   }, []);
 
-  // 対象月 (monthStr) が変わるたびに支出データを再取得
   useEffect(() => {
     fetchExpenses();
   }, [monthStr]);
 
-  // ▼ 削除処理
   const handleDelete = (id: number) => {
     if (!window.confirm('この支出を削除してもよろしいですか？')) return;
-
-    fetch(`${API_BASE_URL}/api/expenses/${id}`, {
-      method: 'DELETE',
-    })
+    fetch(`${API_BASE_URL}/api/expenses/${id}`, { method: 'DELETE' })
     .then(res => {
       if (!res.ok) throw new Error('削除に失敗しました');
-      // 成功したら一覧を再取得
       fetchExpenses();
     })
     .catch(err => console.error('削除エラー:', err));
   };
 
-  // ▼ 編集ボタンが押された時の処理
   const handleEditClick = (expense: Expense) => {
     setEditingExpense(expense);
     setEditDialogOpen(true);
   };
 
-  // ▼ 編集ダイアログを閉じる処理
   const handleCloseDialog = () => {
     setEditDialogOpen(false);
     setEditingExpense(null);
   };
 
-  // ▼ 編集内容を保存する処理（PUTリクエスト）
   const handleEditSubmit = () => {
     if (!editingExpense) return;
-
     fetch(`${API_BASE_URL}/api/expenses/${editingExpense.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -94,7 +74,6 @@ export default function ExpensePage({ monthStr }: Props) {
     .then(res => {
       if (!res.ok) throw new Error('更新に失敗しました');
       handleCloseDialog();
-      // 成功したら一覧を再取得
       fetchExpenses();
     })
     .catch(err => console.error('更新エラー:', err));
@@ -106,9 +85,22 @@ export default function ExpensePage({ monthStr }: Props) {
         支出管理
       </Typography>
 
-      <Box sx={{ mb: 4 }}>
-        {/* 新規登録フォーム（登録完了後に fetchExpenses を呼んで画面を更新） */}
+      {/* 登録フォームと固定費ボタン */}
+      <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <ExpenseForm categories={categories} onExpenseAdded={fetchExpenses} />
+        
+        {/* ★固定費自動入力ボタンを追加 */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button 
+            variant="outlined" 
+            color="primary" 
+            onClick={() => setFixedExpenseDialogOpen(true)}
+            startIcon={<AutoAwesomeIcon />}
+            sx={{ bgcolor: 'white' }}
+          >
+            固定費を自動入力
+          </Button>
+        </Box>
       </Box>
 
       {/* 支出一覧テーブル */}
@@ -122,7 +114,16 @@ export default function ExpensePage({ monthStr }: Props) {
         />
       </Paper>
 
-      {/* 編集用のポップアップ（ダイアログ） */}
+      {/* ★固定費自動入力ダイアログ */}
+      <FixedExpenseDialog 
+        open={fixedExpenseDialogOpen} 
+        onClose={() => setFixedExpenseDialogOpen(false)}
+        categories={categories}
+        monthStr={monthStr}
+        onComplete={fetchExpenses}
+      />
+
+      {/* 編集用ダイアログ（修正いただいた slotProps 反映済み） */}
       <Dialog open={editDialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <DialogTitle>支出の編集</DialogTitle>
         <DialogContent dividers>
