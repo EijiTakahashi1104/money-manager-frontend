@@ -4,14 +4,10 @@ import BudgetSection from '../components/BudgetSection';
 import { API_BASE_URL } from '../config';
 import type { Category } from '../types';
 
-export default function BudgetPage() {
+type Props = { monthStr: string };
+
+export default function BudgetPage({ monthStr }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
-  
-  // 現在の月（例: "2026-08"）
-  const [monthStr] = useState(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  });
 
   useEffect(() => {
     // カテゴリ一覧の取得
