@@ -66,6 +66,22 @@ export default function ExpensePage() {
     .catch(err => console.error('登録エラー:', err));
   };
 
+  // ★ 追加：削除処理
+  const handleDelete = (id: number) => {
+    // 誤操作防止の確認ダイアログ
+    if (!window.confirm('この支出を削除してもよろしいですか？')) return;
+
+    fetch(`${API_BASE_URL}/api/expenses/${id}`, {
+      method: 'DELETE',
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('削除に失敗しました');
+      // 削除成功後、リストを再取得して画面を更新
+      fetchExpensesByMonth(monthStr);
+    })
+    .catch(err => console.error('削除エラー:', err));
+  };
+
   return (
     <Box>
       <Typography variant="h5" gutterBottom>支出の登録と管理</Typography>
@@ -94,7 +110,8 @@ export default function ExpensePage() {
       {/* 支出一覧 */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>{monthStr} の支出一覧</Typography>
-        <ExpenseList expenses={expenses} categories={categories} />
+        {/* ★ onDelete={handleDelete} を追加 */}
+        <ExpenseList expenses={expenses} categories={categories} onDelete={handleDelete} />
       </Paper>
     </Box>
   );
