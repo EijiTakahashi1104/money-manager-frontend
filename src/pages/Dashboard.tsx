@@ -9,19 +9,14 @@ import type { Expense, Budget, Category } from '../types';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d0ed57'];
 
-export default function Dashboard() {
+type Props = { monthStr: string };
+
+export default function Dashboard({ monthStr }: Props) {
   const [totalBudget, setTotalBudget] = useState(0);
   const [totalExpense, setTotalExpense] = useState(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  
-  // ★ プログレスバーの計算に使うため、budgets配列もStateとして保持します
   const [budgets, setBudgets] = useState<Budget[]>([]);
-
-  const [monthStr] = useState(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  });
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/categories`)

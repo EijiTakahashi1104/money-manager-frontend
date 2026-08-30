@@ -4,7 +4,9 @@ import ExpenseList from '../components/ExpenseList';
 import { API_BASE_URL } from '../config';
 import type { Category, Expense } from '../types';
 
-export default function ExpensePage() {
+type Props = { monthStr: string };
+
+export default function ExpensePage({ monthStr }: Props) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -14,12 +16,6 @@ export default function ExpensePage() {
   const [categoryId, setCategoryId] = useState('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [memo, setMemo] = useState('');
-
-  // 現在の月
-  const [monthStr] = useState(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  });
 
   useEffect(() => {
     // カテゴリの取得
